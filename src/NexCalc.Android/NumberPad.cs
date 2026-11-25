@@ -6,7 +6,7 @@ namespace NexCalc.Mobile;
 
 public sealed partial class MainActivity
 {
-    private LinearLayout NumberPad(Func<EditText> fallback, Action done, EditText[] fields, bool expression = false)
+    private LinearLayout NumberPad(Func<EditText> fallback, Action done, EditText[] fields, bool expression = false, bool stretch = true)
     {
         var pad = Column();
         EditText? active = null;
@@ -48,7 +48,7 @@ public sealed partial class MainActivity
             "DEL" or "Clear" => 0x683943,
             "/" or "+" or "-" or "*" or "%" => 0x494365,
             _ => 0x34424F
-        }), stretch: true);
+        }), stretch: stretch);
 
         if (expression)
         {

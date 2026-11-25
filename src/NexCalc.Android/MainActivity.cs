@@ -48,9 +48,9 @@ public sealed partial class MainActivity : Activity
         dialog.Show();
     }
 
-    private readonly string[] modeNames = ["Scientific", "Programmer", "Graph", "Python", "Stat", "Standard", "Carpenter", "Unit Converter"];
+    private readonly string[] modeNames = ["Standard", "Scientific", "Programmer", "Graph", "Python", "Stat", "Carpenter", "Unit Converter"];
     private View[] panels = [];
-    private int activeMode;
+    private int activeMode = 1;
     private Val? answer;
     private AngleMode angleMode;
     private DisplayFormat displayFormat;
@@ -78,7 +78,7 @@ public sealed partial class MainActivity : Activity
 
         var header = new LinearLayout(this);
         header.SetGravity(GravityFlags.CenterVertical);
-        var title = Label(modeNames[0], 20);
+        var title = Label(modeNames[activeMode], 20);
         ApplyThemeTo(() => title.SetTextColor(Accent));
         header.AddView(Key("☰ Menu", () =>
         {
@@ -106,7 +106,7 @@ public sealed partial class MainActivity : Activity
 
         var frame = new FrameLayout(this);
         root.AddView(frame, new LinearLayout.LayoutParams(-1, 0, 1));
-        panels = [ScientificPanel(), ProgrammerPanel(), GraphPanel(), PythonPanel(), StatisticsPanel(), StandardPanel(), CarpenterPanel(), ConverterPanel()];
+        panels = [StandardPanel(), ScientificPanel(), ProgrammerPanel(), GraphPanel(), PythonPanel(), StatisticsPanel(), CarpenterPanel(), ConverterPanel()];
         foreach (var (panel, index) in panels.Select((panel, index) => (panel, index)))
         {
             View page = panel;
@@ -116,7 +116,7 @@ public sealed partial class MainActivity : Activity
                 scroll.AddView(panel);
                 page = scroll;
             }
-            page.Visibility = index == 0 ? ViewStates.Visible : ViewStates.Gone;
+            page.Visibility = index == activeMode ? ViewStates.Visible : ViewStates.Gone;
             panels[index] = page;
             frame.AddView(page, new FrameLayout.LayoutParams(-1, -1));
         }

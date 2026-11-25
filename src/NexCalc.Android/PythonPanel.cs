@@ -17,6 +17,7 @@ public sealed partial class MainActivity
         source.SetMinimumHeight(0);
         source.Gravity = GravityFlags.Top | GravityFlags.Start;
         var output = Label("");
+        output.AccessibilityLiveRegion = AccessibilityLiveRegion.Polite;
         output.SetTextIsSelectable(true);
         output.Typeface = global::Android.Graphics.Typeface.Monospace;
         var running = false;
@@ -80,7 +81,11 @@ public sealed partial class MainActivity
         outputScroll.AddView(output);
         panel.AddView(source, new LinearLayout.LayoutParams(-1, 0, 1));
         panel.AddView(run);
-        panel.AddView(outputScroll, new LinearLayout.LayoutParams(-1, 0, 1));
+        panel.AddView(Label("Output"));
+        ApplyThemeTo(() => outputScroll.SetBackgroundColor(lightTheme
+            ? global::Android.Graphics.Color.Rgb(232, 238, 245)
+            : global::Android.Graphics.Color.Rgb(34, 34, 52)));
+        panel.AddView(outputScroll, new LinearLayout.LayoutParams(-1, 0, 2));
         return panel;
     }
 
