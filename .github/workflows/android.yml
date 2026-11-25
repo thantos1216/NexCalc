@@ -1,0 +1,43 @@
+name: NexCalc Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [android-port]
+  pull_request:
+    paths:
+      - '.github/workflows/android.yml'
+      - 'src/NexCalc.Android/**'
+      - 'src/NexCalc.Core/**'
+      - 'src/NexCalc.Tests/**'
+
+permissions:
+  contents: read
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '10.0.x'
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Run core tests
+        run: dotnet run --project src/NexCalc.Tests -c Release
+      - name: Install .NET for Android
+        run: dotnet workload install android
+      - name: Install Android SDK dependencies
+        run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - name: Build debug APK
+        run: dotnet build src/NexCalc.Android -c Debug
+      - uses: actions/upload-artifact@v6
+        with:
+          name: NexCalc-Android
+          path: src/NexCalc.Android/bin/Debug/net10.0-android/*-Signed.apk
+          if-no-files-found: error
+          retention-days: 7

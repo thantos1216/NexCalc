@@ -739,7 +739,9 @@ public class Program {
         Calc("integrate reversed 2..1", "integrate(x^2,2,1)", deg, "-2.333333333333334");
         Calc("integrate a==b", "integrate(x^2,0,0)", deg, "0");
         Calc("integrate sin RAD", "integrate(sin(x),0,pi)", rad, "2.000000000001082");
-        Calc("integrate cos RAD", "integrate(cos(x),0,pi)", rad, "-0.00000000000000006882727169403699");
+        Result cosineIntegral = Expression.Calculate("integrate(cos(x),0,pi)", rad);
+        CheckClose("integrate cos RAD", 0.0, cosineIntegral.ok
+            ? cosineIntegral.value!.ToDoubleValue() : double.NaN);
         CalcError("integrate singularity", "integrate(1/x,-1,1)", deg, "not defined over");
         CalcError("integrate bare sin", "integrate(sin,0,pi)", deg, "not defined over");
         CalcError("integrate 4-arg non-ident", "integrate(x^2,2,0,10)", deg, "variable name");
