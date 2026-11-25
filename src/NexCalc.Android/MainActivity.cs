@@ -146,7 +146,8 @@ public sealed partial class MainActivity : Activity
         return button;
     }
 
-    private void KeyRows(LinearLayout parent, string[][] rows, Action<string> pressed)
+    private void KeyRows(LinearLayout parent, string[][] rows, Action<string> pressed,
+        Action<string, Button>? bind = null)
     {
         foreach (var keys in rows)
         {
@@ -154,6 +155,7 @@ public sealed partial class MainActivity : Activity
             foreach (var key in keys)
             {
                 View view = string.IsNullOrEmpty(key) ? new Space(this) : Key(key, () => pressed(key));
+                if (view is Button button) bind?.Invoke(key, button);
                 var layout = new LinearLayout.LayoutParams(0, Dp(46), 1);
                 layout.SetMargins(Dp(2), 0, Dp(2), 0);
                 row.AddView(view, layout);

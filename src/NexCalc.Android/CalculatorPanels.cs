@@ -107,23 +107,29 @@ public sealed partial class MainActivity
         input.TextChanged += (_, _) => UpdatePrint();
         OnDone(input, Evaluate);
 
+        var alternateKeys = new Dictionary<string, string>
+        {
+            ["sin"] = "sinh", ["cos"] = "cosh", ["tan"] = "tanh",
+            ["log"] = "logb", ["exp"] = "EXP", ["^"] = "sqrt",
+            ["x²"] = "x³", ["d/c"] = "dms", ["pol"] = "rec", ["X"] = "Y",
+            ["conj"] = "arg", ["i"] = "cmplx", ["π"] = "e", ["A"] = "B",
+            ["MR"] = "MC", ["STO"] = "RCL", ["∫"] = "d/dx", ["nCr"] = "nPr",
+            ["poly2"] = "poly3", ["poly4"] = "solve"
+        };
         string[][] scientificKeys =
         [
             ["sin", "cos", "tan", "ln", "log", "^"],
-            ["sinh", "cosh", "tanh", "sqrt", "exp", "dms"],
-            ["d/c", "x²", "x³", "1/x", "logb", "Rand#"],
-            ["pol", "rec", "X", "Y", "i", "conj"],
-            ["arg", "cmplx", "π", "e", "A", "B"],
-            ["M+", "MR", "MC", "STO", "RCL", "ANS"],
-            ["∫", "d/dx", "nCr", "nPr", "(", ")"],
-            ["D", "%", "poly2", "poly3", "poly4", "solve"]
+            ["exp", "x²", "1/x", "d/c", "Rand#", "%"],
+            ["pol", "X", "i", "conj", "π", "A"],
+            ["M+", "MR", "STO", "ANS", "∫", "nCr"],
+            ["poly2", "poly4", "D", "(", ")", ","]
         ];
         string[][] windowsNumbers =
         [
-            ["7", "8", "9", "DEL", "AC", ","],
+            ["7", "8", "9", "DEL", "AC", ""],
             ["4", "5", "6", "*", "/", ""],
             ["1", "2", "3", "+", "-", ""],
-            ["0", ".", "EXP", "(-)", "=", "SPC"]
+            ["0", ".", "(-)", "=", "SPC", ""]
         ];
         string[][] phoneNumbers =
         [
@@ -132,24 +138,66 @@ public sealed partial class MainActivity
             ["4", "5", "6", "*"],
             ["1", "2", "3", "-"],
             ["0", ".", "=", "+"],
-            ["AC", "ANS", "(-)", "EXP"]
+            ["AC", "ANS", "(-)", "SPC"]
         ];
         var extraKeys = scientificKeys.SelectMany(row => row)
-            .Where(key => key is not ("(" or ")" or "ANS")).Concat(["SPC"]).Chunk(4).ToArray();
+            .Where(key => key is not ("(" or ")" or "," or "ANS")).Concat(["", ""]).Chunk(4).ToArray();
+
+        var shiftedButtons = new List<(Button Button, string Primary, string Alternate)>();
+        bool shifted = false;
+        Button shiftButton = null!;
+        shiftButton = Key("Shift", () => SetShift(!shifted));
+
+        void SetShift(bool active)
+        {
+            shifted = active;
+            shiftButton.Text = active ? "Shift On" : "Shift";
+            shiftButton.ContentDescription = active ? "Shift on" : "Shift off";
+            shiftButton.SetTextColor(active ? Accent : Foreground);
+
+            foreach (var (button, primary, alternate) in shiftedButtons)
+            {
+                button.Text = active ? alternate : primary;
+                button.ContentDescription = active ? alternate : $"{primary}, Shift {alternate}";
+                button.SetTextColor(active ? Accent : Foreground);
+            }
+        }
+
+        void BindShiftKey(string key, Button button)
+        {
+            if (alternateKeys.TryGetValue(key, out var alternate))
+                shiftedButtons.Add((button, key, alternate));
+        }
+
+        void PressKey(string key)
+        {
+            if (shifted && alternateKeys.TryGetValue(key, out var alternate))
+            {
+                SetShift(false);
+                Press(alternate);
+            }
+            else
+            {
+                if (key == "AC") SetShift(false);
+                Press(key);
+            }
+        }
 
         void UpdateKeys()
         {
             keyPanel.RemoveAllViews();
+            shiftedButtons.Clear();
             if (layout == 0)
             {
-                KeyRows(keyPanel, phoneNumbers, Press);
-                KeyRows(keyPanel, extraKeys, Press);
+                KeyRows(keyPanel, phoneNumbers, PressKey);
+                KeyRows(keyPanel, extraKeys, PressKey, BindShiftKey);
             }
             else
             {
-                KeyRows(keyPanel, scientificKeys, Press);
-                KeyRows(keyPanel, windowsNumbers, Press);
+                KeyRows(keyPanel, scientificKeys, PressKey, BindShiftKey);
+                KeyRows(keyPanel, windowsNumbers, PressKey);
             }
+            SetShift(false);
         }
 
         void Press(string key)
@@ -200,7 +248,7 @@ public sealed partial class MainActivity
             layout = index;
             preferences.Edit()?.PutInt("keypad", layout)?.Apply();
             UpdateKeys();
-        }));
+        }), shiftButton);
         UpdateKeys();
         panel.AddView(keyPanel);
         return panel;
