@@ -5,8 +5,8 @@
     <SupportedOSPlatformVersion>23</SupportedOSPlatformVersion>
     <ApplicationId>com.thantos1216.nexcalc</ApplicationId>
     <ApplicationTitle>NexCalc</ApplicationTitle>
-    <ApplicationVersion>4</ApplicationVersion>
-    <ApplicationDisplayVersion>0.2.2</ApplicationDisplayVersion>
+    <ApplicationVersion>5</ApplicationVersion>
+    <ApplicationDisplayVersion>0.2.3</ApplicationDisplayVersion>
     <AndroidPackageFormats>apk</AndroidPackageFormats>
     <EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
     <ImplicitUsings>enable</ImplicitUsings>

@@ -10,7 +10,9 @@ public sealed partial class MainActivity
     {
         var panel = Column();
         var input = Field("Expression");
-        var result = Label("0", 30);
+        var result = Label("0", 38);
+        result.SetMinHeight(Dp(60));
+        result.Gravity = GravityFlags.End | GravityFlags.CenterVertical;
         result.SetTextIsSelectable(true);
         result.AccessibilityLiveRegion = AccessibilityLiveRegion.Polite;
         var exactResult = Label("", 17);
@@ -86,9 +88,13 @@ public sealed partial class MainActivity
             }
         }
 
-        panel.AddView(result);
-        panel.AddView(exactResult);
-        panel.AddView(input);
+        var display = Column();
+        display.SetBackgroundColor(global::Android.Graphics.Color.Rgb(28, 44, 48));
+        display.SetPadding(Dp(8), 0, Dp(8), 0);
+        display.AddView(result);
+        display.AddView(exactResult);
+        display.AddView(input);
+        panel.AddView(display);
         panel.AddView(print);
         Row(panel,
             Choice("Angle", ["DEG", "RAD", "GRAD"], (int)angleMode, selected => { angleMode = (AngleMode)selected; SaveSettings(); }),
@@ -100,9 +106,6 @@ public sealed partial class MainActivity
         toggle.SetTextColor(Foreground);
         toggle.CheckedChange += (_, args) => { mathPrint = args.IsChecked; UpdatePrint(); SaveSettings(); };
         var keyPanel = Column();
-        var preferences = GetPreferences(global::Android.Content.FileCreationMode.Private)!;
-        int layout = preferences.GetInt("keypad", 0);
-        Row(panel, toggle, historyButton);
         UpdatePrint();
         input.TextChanged += (_, _) => UpdatePrint();
         OnDone(input, Evaluate);
@@ -124,24 +127,13 @@ public sealed partial class MainActivity
             ["M+", "MR", "STO", "ANS", "∫", "nCr"],
             ["poly2", "poly4", "D", "(", ")", ","]
         ];
-        string[][] windowsNumbers =
+        string[][] numberKeys =
         [
-            ["7", "8", "9", "DEL", "AC", ""],
-            ["4", "5", "6", "*", "/", ""],
-            ["1", "2", "3", "+", "-", ""],
-            ["0", ".", "(-)", "=", "SPC", ""]
+            ["7", "8", "9", "DEL", "AC"],
+            ["4", "5", "6", "*", "/"],
+            ["1", "2", "3", "+", "-"],
+            ["0", ".", "(-)", "SPC", "="]
         ];
-        string[][] phoneNumbers =
-        [
-            ["(", ")", ",", "DEL"],
-            ["7", "8", "9", "/"],
-            ["4", "5", "6", "*"],
-            ["1", "2", "3", "-"],
-            ["0", ".", "=", "+"],
-            ["AC", "ANS", "(-)", "SPC"]
-        ];
-        var extraKeys = scientificKeys.SelectMany(row => row)
-            .Where(key => key is not ("(" or ")" or "," or "ANS")).Concat(["", ""]).Chunk(4).ToArray();
 
         var shiftedButtons = new List<(Button Button, string Primary, string Alternate)>();
         bool shifted = false;
@@ -165,6 +157,12 @@ public sealed partial class MainActivity
 
         void BindShiftKey(string key, Button button)
         {
+            StyleKey(button, key switch
+            {
+                "M+" or "MR" or "STO" or "ANS" or "A" or "D" => 0x49395B,
+                "(" or ")" or "," => 0x34424F,
+                _ => 0x263F53
+            });
             if (alternateKeys.TryGetValue(key, out var alternate))
                 shiftedButtons.Add((button, key, alternate));
         }
@@ -181,23 +179,6 @@ public sealed partial class MainActivity
                 if (key == "AC") SetShift(false);
                 Press(key);
             }
-        }
-
-        void UpdateKeys()
-        {
-            keyPanel.RemoveAllViews();
-            shiftedButtons.Clear();
-            if (layout == 0)
-            {
-                KeyRows(keyPanel, phoneNumbers, PressKey);
-                KeyRows(keyPanel, extraKeys, PressKey, BindShiftKey);
-            }
-            else
-            {
-                KeyRows(keyPanel, scientificKeys, PressKey, BindShiftKey);
-                KeyRows(keyPanel, windowsNumbers, PressKey);
-            }
-            SetShift(false);
         }
 
         void Press(string key)
@@ -243,14 +224,22 @@ public sealed partial class MainActivity
             });
         }
 
-        Row(panel, Choice("Keypad layout", ["Phone keypad", "Windows keypad"], layout, index =>
+        StyleKey(shiftButton, 0x135764);
+        Row(panel, toggle, historyButton, shiftButton);
+        KeyRows(keyPanel, scientificKeys, PressKey, BindShiftKey, stretch: true);
+        KeyRows(keyPanel, numberKeys, PressKey, (key, button) =>
         {
-            layout = index;
-            preferences.Edit()?.PutInt("keypad", layout)?.Apply();
-            UpdateKeys();
-        }), shiftButton);
-        UpdateKeys();
-        panel.AddView(keyPanel);
+            StyleKey(button, key switch
+            {
+                "AC" or "DEL" => 0x683943,
+                "=" => 0x185C6B,
+                "*" or "/" or "+" or "-" => 0x494365,
+                _ => 0x34424F
+            });
+            button.TextSize = 17;
+        }, stretch: true);
+        SetShift(false);
+        panel.AddView(keyPanel, new LinearLayout.LayoutParams(-1, -2, 1));
         return panel;
     }
 

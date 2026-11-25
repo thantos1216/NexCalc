@@ -147,7 +147,7 @@ public sealed partial class MainActivity : Activity
     }
 
     private void KeyRows(LinearLayout parent, string[][] rows, Action<string> pressed,
-        Action<string, Button>? bind = null)
+        Action<string, Button>? bind = null, bool stretch = false)
     {
         foreach (var keys in rows)
         {
@@ -156,13 +156,18 @@ public sealed partial class MainActivity : Activity
             {
                 View view = string.IsNullOrEmpty(key) ? new Space(this) : Key(key, () => pressed(key));
                 if (view is Button button) bind?.Invoke(key, button);
-                var layout = new LinearLayout.LayoutParams(0, Dp(46), 1);
+                if (stretch) view.SetMinimumHeight(Dp(43));
+                var layout = new LinearLayout.LayoutParams(0, stretch ? -1 : Dp(46), 1);
                 layout.SetMargins(Dp(2), 0, Dp(2), 0);
                 row.AddView(view, layout);
             }
-            parent.AddView(row);
+            parent.AddView(row, new LinearLayout.LayoutParams(-1, -2, stretch ? 1 : 0));
         }
     }
+
+    private static void StyleKey(Button button, int rgb) =>
+        button.BackgroundTintList = ColorStateList.ValueOf(
+            Color.Rgb((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255));
 
     private Button Choice(string label, string[] values, int initial, Action<int> changed)
     {

@@ -437,13 +437,16 @@ public class Program {
         CalcError("frac non-int", "frac(1.5,2)", deg, "integers");
 
         FmtCheck("frac disp 1/3", "1/3", "FRAC", 0, "1/3");
-        FmtCheck("frac disp reduce", "6/4", "FRAC", 0, "1 1/2");
+        FmtCheck("frac disp reduce", "6/4", "FRAC", 0, "3/2");
         FmtCheck("frac disp int", "4", "FRAC", 0, "4");
-        FmtCheck("frac disp neg", "-3/2", "FRAC", 0, "-1 1/2");
-        FmtCheck("frac disp 17/10", "17/10", "FRAC", 0, "1 7/10");
-        FmtCheck("frac disp 17/10 via frac()", "frac(17,10)", "FRAC", 0, "1 7/10");
+        FmtCheck("frac disp neg", "-3/2", "FRAC", 0, "-3/2");
+        FmtCheck("frac disp 17/10", "17/10", "FRAC", 0, "17/10");
+        FmtCheck("frac disp 17/10 via frac()", "frac(17,10)", "FRAC", 0, "17/10");
         Calc("fraction addition decimal in Norm", "7/9+1/9", deg, "0.8888888888888889");
         FmtCheck("fraction addition exact in Frac", "7/9+1/9", "FRAC", 0, "8/9");
+        FmtCheck("improper result", "sin(30)+7/9+1/9", "FRAC", 0, "25/18");
+        FmtCheck("mixed result", "sin(30)+7/9+1/9", "MIXED", 0, "1 7/18");
+        FmtCheck("negative mixed result", "-3/2", "MIXED", 0, "-1 1/2");
         FmtCheck("frac disp irrational", "sqrt(2)", "FRAC", 0, "1.414213562373095");
         FmtCheck("mixed 6/4", "6/4", "MIXED", 0, "1 1/2");
         FmtCheck("mixed 10/3", "10/3", "MIXED", 0, "3 1/3");
@@ -472,7 +475,7 @@ public class Program {
         CalcError("randint frac", "randint(1.5,4)", deg, "integers");
         CalcError("randint arity", "randint(1)", deg, "2 argument");
         CalcError("rand with arg", "rand(1)", deg, "0 argument");
-        FmtCheck("square frac", "square(3/2)", "FRAC", 0, "2 1/4");
+        FmtCheck("square frac", "square(3/2)", "FRAC", 0, "9/4");
         Calc("mixed input 1 1/2", "1 1/2", deg, "1.5");
         Calc("mixed input 2 3/4", "2 3/4", deg, "2.75");
         Calc("mixed input neg", "-1 1/2", deg, "-1.5");
@@ -483,7 +486,7 @@ public class Program {
         Calc("mixed input improper part", "3 12/5", deg, "5.4");
         CalcError("mixed input zero den", "2 3/0", deg, "divide by 0");
         CalcError("mixed input lone pair", "2 3", deg, "missing operator");
-        FmtCheck("mixed input disp", "1 1/2", "FRAC", 0, "1 1/2");
+        FmtCheck("mixed input disp", "1 1/2", "FRAC", 0, "3/2");
 
         // ---- Fraction key behavior: what the d/c + SPC keys generate ----
         Calc("key 7/16", "7/16", deg, "0.4375");
@@ -491,7 +494,7 @@ public class Program {
         Calc("key mixed 2 2/5", "2 2/5", deg, "2.4");
         Calc("key mixed spaces", "2 2/5 + 1", deg, "3.4");
         Calc("key mixed in call", "sqrt(1 1/4)", deg, "1.118033988749895");
-        FmtCheck("key mixed FRAC", "2 2/5", "FRAC", 0, "2 2/5");
+        FmtCheck("key mixed FRAC", "2 2/5", "FRAC", 0, "12/5");
         Calc("key dslash", "1/2/3", deg, "0.1666666666666666");
         FmtCheck("tenpow -2 frac", "tenpow(-2)", "FRAC", 0, "1/100");
         RandRangeCheck("rand 0-1 a", "rand()", 0.0, 1.0);

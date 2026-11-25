@@ -27,9 +27,7 @@ namespace NexCalc.Core
                 return Display(v);
             }
             if (fmt == DisplayFormat.Dms) return DmsString(v, digits);
-            // Casio d/c style: Frac breaks improper fractions into a whole
-            // number ("17/10" -> "1 7/10"); values below 1 stay as fractions.
-            if (fmt == DisplayFormat.Frac) return FracString(v, true);
+            if (fmt == DisplayFormat.Frac) return FracString(v, false);
             if (fmt == DisplayFormat.Mixed) return FracString(v, true);
             if (v.exact && v.r!.IsInteger()) {
                 BigInteger big = v.r!.num;

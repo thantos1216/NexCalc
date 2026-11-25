@@ -24,8 +24,7 @@ NexCalc is available under the [MIT License](LICENSE.txt).
 ## Android
 
 The Android project shares the C# calculation engine. It includes Scientific,
-Programmer, Graph, Python, and Stat modes. Scientific mode offers phone and
-Windows keypad layouts. The display, angle, and programmer settings persist
+Programmer, Graph, Python, and Stat modes. Scientific mode uses a Windows-style keypad with Shift for alternate functions. The display, angle, and programmer settings persist
 between launches.
 
 Build with the .NET 10 Android workload, JDK 21, and the Android SDK. From Bash:
