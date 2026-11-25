@@ -1,7 +1,10 @@
 ; NexCalc installer script - Inno Setup 6
 ; Builds NexCalc-Setup-1.0.0.exe from the self-contained publish output in release\app
 
-#define MyVersion "1.0.0"
+#define MyVersion "1.1.0"
+#ifndef AppSource
+  #define AppSource "..\release\app"
+#endif
 
 [Setup]
 AppId={{8F3A1C97-7B4D-4E2A-9C58-1A2B3C4D5E6F}
@@ -9,7 +12,7 @@ AppName=NexCalc
 AppVersion={#MyVersion}
 AppVerName=NexCalc {#MyVersion}
 AppPublisher=NexCalc
-AppPublisherURL=https://github.com/
+AppPublisherURL=https://github.com/thantos1216/NexCalc
 DefaultDirName={autopf}\NexCalc
 DefaultGroupName=NexCalc
 UninstallDisplayIcon={app}\NexCalc.exe
@@ -21,12 +24,12 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 PrivilegesRequired=lowest
 OutputDir=..\installer
-OutputBaseFilename=NexCalc-Setup-1.0.0
+OutputBaseFilename=NexCalc-Setup-{#MyVersion}
 SetupIconFile=..\src\NexCalc\Assets\nexcalc.ico
 LicenseFile=..\LICENSE.txt
 
 [Files]
-Source: "..\release\app\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#AppSource}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [Icons]
 Name: "{group}\NexCalc"; Filename: "{app}\NexCalc.exe"; IconFilename: "{app}\NexCalc.exe"

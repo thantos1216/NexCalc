@@ -2,6 +2,10 @@
 
 NexCalc is a C# calculator for Windows and Android with a shared calculation engine. Both apps include Standard, Scientific, Programmer, Graph, Statistics, Carpenter, Unit Converter, and Python modes.
 
+## Downloads
+
+Get the [Windows x64 installer and Android APK from GitHub Releases](https://github.com/thantos1216/NexCalc/releases/latest).
+
 ## Windows (WPF)
 
 On Windows with the .NET 10 SDK installed, run:
@@ -22,6 +26,18 @@ temperature, and speed. Both modes accept fractions and expressions.
 
 Windows Python mode uses the locally installed Python interpreter on PATH and
 provides a resizable output pane. Android bundles its own Python runtime.
+
+### Build the Windows installer
+
+Install Inno Setup 6. From PowerShell at the repository root:
+
+```powershell
+dotnet publish src/NexCalc -c Release -r win-x64 --self-contained true -o release/app
+& "$env:LOCALAPPDATA\Programs\Inno Setup 6\ISCC.exe" installer/NexCalc.iss
+```
+
+Use the path to your installed copy of ISCC if it differs. The installer is
+written to the `installer` directory.
 
 ## Run the shared tests
 
