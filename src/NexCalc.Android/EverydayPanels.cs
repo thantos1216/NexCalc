@@ -1,4 +1,3 @@
-using System.Globalization;
 using Android.Graphics;
 using Android.Views;
 using Android.Widget;
@@ -107,20 +106,7 @@ public sealed partial class MainActivity
         bool metric = false;
         int lengthUnit = 0;
         string[] metricUnits = ["mm", "cm", "m"];
-        double[] metresPerUnit = [0.001, 0.01, 1];
-        string[][] imperialPrompts =
-        [
-            ["Feet", "Inches (fraction or decimal)"], ["Length (ft)", "Width (ft)"],
-            ["Length (ft)", "Width (ft)", "Depth (ft)"], ["Thickness (in)", "Width (in)", "Length (ft)"],
-            ["Length (ft)", "Width (ft)"], ["Area to cover (ft²)", "Coverage per item (ft²)", "Waste (%)"]
-        ];
-        string[][] metricPrompts =
-        [
-            ["Length"], ["Length (m)", "Width (m)"], ["Length (m)", "Width (m)", "Depth (m)"],
-            ["Thickness (mm)", "Width (mm)", "Length (m)"], ["Length (m)", "Width (m)"],
-            ["Area to cover (m²)", "Coverage per item (m²)", "Waste (%)"]
-        ];
-        string[] Prompts() => (metric ? metricPrompts : imperialPrompts)[selected];
+        IReadOnlyList<string> Prompts() => Measurements.Prompts((CarpenterTool)selected, metric);
 
         EditText[] fields = [Field(""), Field(""), Field("")];
         TextView[] captions = [Label(""), Label(""), Label("")];
@@ -140,8 +126,8 @@ public sealed partial class MainActivity
             var prompts = Prompts();
             for (int i = 0; i < fields.Length; i++)
             {
-                fields[i].Visibility = i < prompts.Length ? ViewStates.Visible : ViewStates.Gone;
-                if (i < prompts.Length)
+                fields[i].Visibility = i < prompts.Count ? ViewStates.Visible : ViewStates.Gone;
+                if (i < prompts.Count)
                 {
                     var caption = metric && selected == 0 ? $"Length ({metricUnits[lengthUnit]})" : prompts[i];
                     captions[i].Text = caption;
@@ -163,13 +149,13 @@ public sealed partial class MainActivity
 
         void Calculate()
         {
-            var dimensions = new double[Prompts().Length];
+            var dimensions = new double[Prompts().Count];
             for (int i = 0; i < dimensions.Length; i++)
             {
                 if (selected == 0 && !metric && string.IsNullOrWhiteSpace(fields[i].Text) &&
                     !string.IsNullOrWhiteSpace(fields[1 - i].Text))
                     continue;
-                if (!TryMeasurement(fields[i].Text, out dimensions[i]) || dimensions[i] < 0)
+                if (!Measurements.TryParse(fields[i].Text, out dimensions[i]) || dimensions[i] < 0)
                 {
                     output.Text = $"Enter a nonnegative value for {fields[i].Hint}.";
                     return;
@@ -178,25 +164,7 @@ public sealed partial class MainActivity
 
             double a = dimensions[0], b = dimensions.Length >= 2 ? dimensions[1] : 0;
             double c = dimensions.Length == 3 ? dimensions[2] : 0;
-            const double metresPerFoot = 0.3048;
-            const double metresPerInch = 0.0254;
-            double lengthMetres = a * metresPerUnit[lengthUnit];
-            double diagonal = double.Hypot(a, b);
-            output.Text = (selected, metric) switch
-            {
-                (0, true) => $"{Number(lengthMetres * 1000)} mm · {Number(lengthMetres * 100)} cm · {Number(lengthMetres)} m\n{FeetAndInches(lengthMetres / metresPerInch)}",
-                (0, false) => $"{FeetAndInches(a * 12 + b)}\n{Number(a * 12 + b)} in · {Number((a * 12 + b) * 2.54)} cm",
-                (1, true) => $"{Number(a * b)} m²\n{Number(a * b / 0.09290304)} ft²",
-                (1, false) => $"{Number(a * b)} ft²\n{Number(a * b * 0.09290304)} m²",
-                (2, true) => $"{Number(a * b * c)} m³\n{Number(a * b * c / 0.028316846592)} ft³",
-                (2, false) => $"{Number(a * b * c)} ft³\n{Number(a * b * c / 27)} yd³",
-                (3, true) => $"{Number(a * b * c / 1_000_000)} m³\n{Number(a * b * c / 2359.737216)} board ft",
-                (3, false) => $"{Number(a * b * c / 12)} board ft",
-                (4, true) => $"{Number(diagonal)} m\n{FeetAndInches(diagonal / metresPerInch)}",
-                (4, false) => $"{Number(diagonal)} ft · {Number(diagonal * metresPerFoot)} m\n{FeetAndInches(diagonal * 12)}",
-                _ when b > 0 => $"{Number(Math.Ceiling(a / b * (1 + c / 100)))} items",
-                _ => "Coverage per item must be greater than zero."
-            };
+            output.Text = Measurements.Carpenter((CarpenterTool)selected, metric, lengthUnit, a, b, c);
         }
 
         tools.AddView(Key("Calculate", Calculate));
@@ -216,33 +184,4 @@ public sealed partial class MainActivity
         return panel;
     }
 
-    private static string FeetAndInches(double inches)
-    {
-        double rounded = Math.Round(inches * 16, MidpointRounding.AwayFromZero);
-        if (!double.IsFinite(rounded) || rounded >= long.MaxValue) return "Measurement out of range";
-        long sixteenths = (long)rounded;
-        long feet = sixteenths / 192;
-        long wholeInches = sixteenths % 192 / 16;
-        long remainder = sixteenths % 16;
-        var reduced = Rat.Make(remainder, 16);
-        string fraction = remainder == 0 ? "" : $" {reduced.num}/{reduced.den}";
-        return $"{feet} ft {wholeInches}{fraction} in (nearest 1/16 in)";
-    }
-
-    private static bool TryMeasurement(string? text, out double value)
-    {
-        value = 0;
-        if (string.IsNullOrWhiteSpace(text)) return false;
-        if (double.TryParse(text, NumberStyles.Float, CultureInfo.CurrentCulture, out value))
-            return double.IsFinite(value);
-        var result = Expression.Calculate(text, AngleMode.Deg);
-        if (!result.ok || result.value is not { } real || real.complex ||
-            real.mat is not null || real.roots is not null || real.text is not null)
-            return false;
-        value = real.ToDoubleValue();
-        return double.IsFinite(value);
-    }
-
-    private static string Number(double value) => double.IsFinite(value)
-        ? value.ToString("G12", CultureInfo.CurrentCulture) : "Out of range";
 }

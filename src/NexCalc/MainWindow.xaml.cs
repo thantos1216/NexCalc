@@ -16,6 +16,7 @@ namespace NexCalc;
 public partial class MainWindow : Window
 {
     Val? lastAnsVal = null;
+    Val? visibleScientificValue;
     bool pyBusy = false;
 
     // Trace state: the curve last rendered, its canvas mapping, and the cursor index
@@ -33,6 +34,11 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializeTheme();
+        SetScientificShift(false);
+        InitializeEverydayModes();
+        InitializePreferences();
+        Closed += (_, _) => SavePreferences();
     }
 
     AngleMode CurrentMode()
@@ -67,16 +73,36 @@ public partial class MainWindow : Window
         Result r = NexCalc.Core.Expression.Calculate(text, CurrentMode(), lastAnsVal);
         if (r.ok && r.value != null)
         {
-            string disp = Format.Display(r.value!, CurrentFmt(), CurrentDigits());
-            displayText.Text = disp;
-            displayText.Foreground = new SolidColorBrush(Color.FromRgb(238, 240, 248));
-            historyBox.Items.Insert(0, text + " = " + disp);
+            visibleScientificValue = r.value;
+            RenderScientificResult();
+            displayText.SetResourceReference(ForegroundProperty, "TextBrush");
+            historyBox.Items.Insert(0, text + " = " + displayText.Text);
             lastAnsVal = r.value;
         }
         else
         {
+            visibleScientificValue = null;
+            RenderScientificResult();
             displayText.Text = r.message ?? "Error";
-            displayText.Foreground = new SolidColorBrush(Color.FromRgb(255, 110, 110));
+            displayText.SetResourceReference(ForegroundProperty, "ErrorBrush");
+        }
+    }
+
+    void DisplaySettings_Changed(object sender, SelectionChangedEventArgs e)
+    {
+        if (visibleScientificValue is not null) RenderScientificResult();
+    }
+
+    void RenderScientificResult()
+    {
+        exactResult.Visibility = Visibility.Collapsed;
+        if (visibleScientificValue is not { } value) return;
+        var format = CurrentFmt();
+        displayText.Text = Format.Display(value, format, CurrentDigits());
+        if (Format.ExactCompanion(value, format) is { } exact)
+        {
+            exactResult.Text = "Exact: " + exact;
+            exactResult.Visibility = Visibility.Visible;
         }
     }
 
@@ -115,127 +141,50 @@ public partial class MainWindow : Window
         }
     }
 
-    void Key_Click(object sender, RoutedEventArgs e)
+    void Shift_Click(object sender, RoutedEventArgs e) => SetScientificShift(shiftButton.IsChecked == true);
+
+    void SetScientificShift(bool active)
     {
-        string t = ((Button)sender).Content?.ToString() ?? "";
-        if (t == "C" || t == "AC")
+        shiftButton.IsChecked = active;
+        shiftButton.Content = active ? "Shift On" : "Shift";
+        foreach (Button key in scientificKeys.Children)
         {
-            exprBox.Text = "";
-            displayText.Text = "0";
-        }
-        else if (t == "⌫" || t == "DEL")
-        {
-            if (exprBox.Text.Length > 0)
+            string primary = (string)(key.Tag ??= key.Content);
+            if (ScientificKeys.Alternates.TryGetValue(primary, out var alternate))
             {
-                exprBox.Text = exprBox.Text.Substring(0, exprBox.Text.Length - 1);
+                key.Content = active ? alternate : primary;
+                key.ToolTip = active ? primary : $"Shift: {alternate}";
             }
         }
-        else if (t == "=")
+    }
+
+    void Key_Click(object sender, RoutedEventArgs e)
+    {
+        var button = (Button)sender;
+        string key = (string)button.Content;
+        if (shiftButton.IsChecked == true && button.Tag is string primary && key != primary)
+            SetScientificShift(false);
+
+        switch (key)
         {
-            Evaluate();
+            case "=":
+                Evaluate();
+                break;
+            case "AC":
+                SetScientificShift(false);
+                exprBox.Clear();
+                visibleScientificValue = null;
+                RenderScientificResult();
+                displayText.Text = "0";
+                displayText.SetResourceReference(ForegroundProperty, "TextBrush");
+                break;
+            case "DEL":
+                EditInput(exprBox, key);
+                break;
+            default:
+                EditInput(exprBox, ScientificKeys.Insertion(key, exprBox.Text.Length == 0), literal: true);
+                break;
         }
-        else if (t == "ANS")
-        {
-            exprBox.Text += "ANS";
-        }
-        else if (t == "sin" || t == "cos" || t == "tan" || t == "ln" || t == "log" || t == "exp" || t == "sqrt" || t == "dms" || t == "logb" || t == "pol" || t == "rec" || t == "conj" || t == "arg" || t == "cmplx" || t == "sinh" || t == "cosh" || t == "tanh" || t == "poly2" || t == "poly3" || t == "poly4" || t == "solve")
-        {
-            exprBox.Text += t + "(";
-        }
-        else if (t == "X")
-        {
-            exprBox.Text += "X()";
-        }
-        else if (t == "Y")
-        {
-            exprBox.Text += "Y()";
-        }
-        else if (t == "M+")
-        {
-            exprBox.Text += "madd(ANS)";
-        }
-        else if (t == "MR")
-        {
-            exprBox.Text += "m(";
-        }
-        else if (t == "MC")
-        {
-            exprBox.Text += "mc(";
-        }
-        else if (t == "STO")
-        {
-            exprBox.Text += "sto(";
-        }
-        else if (t == "RCL")
-        {
-            exprBox.Text += "rcl(";
-        }
-        else if (t == "A")
-        {
-            exprBox.Text += "a";
-        }
-        else if (t == "B")
-        {
-            exprBox.Text += "b";
-        }
-        else if (t == "D")
-        {
-            exprBox.Text += "d";
-        }
-        else if (t == "d/c")
-        {
-            // Fraction key: inserts a slash; from an empty box, a full 1/2 fraction.
-            exprBox.Text += exprBox.Text.Length == 0 ? "1/2" : "/";
-        }
-        else if (t == "SPC")
-        {
-            exprBox.Text += " ";
-        }
-        else if (t == "x²")
-        {
-            exprBox.Text += "square(";
-        }
-        else if (t == "x³")
-        {
-            exprBox.Text += "cube(";
-        }
-        else if (t == "1/x")
-        {
-            exprBox.Text += "recip(";
-        }
-        else if (t == "10^x" || t == "EXP")
-        {
-            exprBox.Text += "tenpow(";
-        }
-        else if (t == "(-)")
-        {
-            exprBox.Text += "-";
-        }
-        else if (t == "Rand#")
-        {
-            exprBox.Text += "rand()";
-        }
-        else if (t == "∫")
-        {
-            exprBox.Text += "integrate(";
-        }
-        else if (t == "d/dx")
-        {
-            exprBox.Text += "deriv(";
-        }
-        else if (t == "nCr")
-        {
-            exprBox.Text += "combin(";
-        }
-        else if (t == "nPr")
-        {
-            exprBox.Text += "perm(";
-        }
-        else
-        {
-            exprBox.Text += t;
-        }
-        exprBox.CaretIndex = exprBox.Text.Length;
     }
 
     void GraphExpr_KeyDown(object sender, KeyEventArgs e)
@@ -316,7 +265,7 @@ public partial class MainWindow : Window
         Ellipse dot = new Ellipse();
         dot.Width = 7;
         dot.Height = 7;
-        dot.Fill = new SolidColorBrush(Color.FromRgb(255, 192, 105));
+        dot.SetResourceReference(Shape.FillProperty, "WarmBrush");
         Canvas.SetLeft(dot, px - 3.5);
         Canvas.SetTop(dot, py - 3.5);
         graphCanvas.Children.Add(dot);
@@ -418,7 +367,7 @@ public partial class MainWindow : Window
             {
                 Polyline pl = new Polyline();
                 pl.Points = pts;
-                pl.Stroke = new SolidColorBrush(Color.FromRgb(197, 143, 255));
+                pl.SetResourceReference(Shape.StrokeProperty, "TangentBrush");
                 pl.StrokeThickness = 1.5;
                 graphCanvas.Children.Add(pl);
                 sketchLines.Add(pl);
@@ -426,7 +375,6 @@ public partial class MainWindow : Window
             graphMsg.Text = "tangent: slope=" + s.ToString("0.###") + " at (" + x0.ToString("0.###") + ", " + y0.ToString("0.###") + ")";
             return;
         }
-        SolidColorBrush c = new SolidColorBrush(Color.FromRgb(255, 158, 158));
         Line l = new Line();
         if (kind == "h")
         {
@@ -440,7 +388,7 @@ public partial class MainWindow : Window
             l.X1 = px0; l.X2 = px0; l.Y1 = pad; l.Y2 = H - pad;
             graphMsg.Text = "vert: x=" + x0.ToString("0.###");
         }
-        l.Stroke = c;
+        l.SetResourceReference(Shape.StrokeProperty, "SketchBrush");
         l.StrokeThickness = 1.5;
         DoubleCollection dash = new DoubleCollection();
         dash.Add(4);
@@ -499,7 +447,7 @@ public partial class MainWindow : Window
 
     // Draw one curve as segments on the canvas; points outside the visible
     // Y window end a segment (the curve is clipped at the plot edges).
-    void DrawCurve(double[] x, double[] y, Color color, double pad, double W, double H, double sx, double sy, double minX, double minY)
+    void DrawCurve(double[] x, double[] y, string brushKey, double pad, double W, double H, double sx, double sy, double minX, double minY)
     {
         int n = x.Length;
         int k = 0;
@@ -521,7 +469,7 @@ public partial class MainWindow : Window
             {
                 Polyline pl = new Polyline();
                 pl.Points = pts;
-                pl.Stroke = new SolidColorBrush(color);
+                pl.SetResourceReference(Shape.StrokeProperty, brushKey);
                 pl.StrokeThickness = 2;
                 graphCanvas.Children.Add(pl);
             }
@@ -612,8 +560,6 @@ public partial class MainWindow : Window
         }
 
         // grid lines with tick labels at nice steps, drawn under axes and curve
-        SolidColorBrush gridBrush = new SolidColorBrush(Color.FromRgb(42, 42, 64));
-        SolidColorBrush labelBrush = new SolidColorBrush(Color.FromRgb(150, 160, 184));
         double xStep = ParseScale(graphXsclText.Text, NiceStep(maxX - minX), maxX - minX);
         int i0 = (int)Math.Ceiling(minX / xStep);
         int i1 = (int)Math.Floor(maxX / xStep);
@@ -623,13 +569,13 @@ public partial class MainWindow : Window
             double px = pad + (xt - minX) * sx;
             Line g = new Line();
             g.X1 = px; g.X2 = px; g.Y1 = pad; g.Y2 = H - pad;
-            g.Stroke = gridBrush;
+            g.SetResourceReference(Shape.StrokeProperty, "ButtonBrush");
             g.StrokeThickness = 1;
             graphCanvas.Children.Add(g);
             TextBlock tb = new TextBlock();
             tb.Text = xt.ToString("0.###");
             tb.FontSize = 10;
-            tb.Foreground = labelBrush;
+            tb.SetResourceReference(ForegroundProperty, "ChartLabelBrush");
             Canvas.SetLeft(tb, px - 14);
             Canvas.SetTop(tb, H - pad + 2);
             graphCanvas.Children.Add(tb);
@@ -643,13 +589,13 @@ public partial class MainWindow : Window
             double py = H - pad - (yt - minY) * sy;
             Line g = new Line();
             g.X1 = pad; g.X2 = W - pad; g.Y1 = py; g.Y2 = py;
-            g.Stroke = gridBrush;
+            g.SetResourceReference(Shape.StrokeProperty, "ButtonBrush");
             g.StrokeThickness = 1;
             graphCanvas.Children.Add(g);
             TextBlock tb = new TextBlock();
             tb.Text = yt.ToString("0.###");
             tb.FontSize = 10;
-            tb.Foreground = labelBrush;
+            tb.SetResourceReference(ForegroundProperty, "ChartLabelBrush");
             Canvas.SetLeft(tb, pad - 24);
             Canvas.SetTop(tb, py - 6);
             graphCanvas.Children.Add(tb);
@@ -661,7 +607,7 @@ public partial class MainWindow : Window
             double axx = pad + (0 - minX) * sx;
             Line v = new Line();
             v.X1 = axx; v.X2 = axx; v.Y1 = pad; v.Y2 = H - pad;
-            v.Stroke = new SolidColorBrush(Color.FromRgb(70, 78, 100));
+            v.SetResourceReference(Shape.StrokeProperty, "ChartAxisBrush");
             v.StrokeThickness = 1;
             graphCanvas.Children.Add(v);
         }
@@ -670,16 +616,16 @@ public partial class MainWindow : Window
             double ayy = H - pad - (0 - minY) * sy;
             Line hh = new Line();
             hh.X1 = pad; hh.X2 = W - pad; hh.Y1 = ayy; hh.Y2 = ayy;
-            hh.Stroke = new SolidColorBrush(Color.FromRgb(70, 78, 100));
+            hh.SetResourceReference(Shape.StrokeProperty, "ChartAxisBrush");
             hh.StrokeThickness = 1;
             graphCanvas.Children.Add(hh);
         }
 
         // curve segments, split at undefined points and clipped at the Y window
-        DrawCurve(x, y, Color.FromRgb(102, 170, 255), pad, W, H, sx, sy, minX, minY);
+        DrawCurve(x, y, "CurveBrush", pad, W, H, sx, sy, minX, minY);
         if (plan2ok)
         {
-            DrawCurve(plan2!.xs, plan2.ys, Color.FromRgb(143, 216, 160), pad, W, H, sx, sy, minX, minY);
+            DrawCurve(plan2!.xs, plan2.ys, "FunctionBrush", pad, W, H, sx, sy, minX, minY);
         }
 
         // record trace state for Trace/◀/▶ on the curve we just rendered
@@ -799,6 +745,9 @@ public partial class MainWindow : Window
     void Mode_Click(object sender, RoutedEventArgs e)
     {
         string m = ((Button)sender).Content?.ToString() ?? "Scientific";
+        standardView.Visibility = m == "Standard" ? Visibility.Visible : Visibility.Collapsed;
+        carpenterView.Visibility = m == "Carpenter" ? Visibility.Visible : Visibility.Collapsed;
+        converterView.Visibility = m == "Unit Converter" ? Visibility.Visible : Visibility.Collapsed;
         panelScientific.Visibility = m == "Scientific" ? Visibility.Visible : Visibility.Collapsed;
         panelProg.Visibility = m == "Programmer" ? Visibility.Visible : Visibility.Collapsed;
         panelGraph.Visibility = m == "Graph" ? Visibility.Visible : Visibility.Collapsed;

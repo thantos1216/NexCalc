@@ -1,8 +1,8 @@
 # NexCalc
 
-NexCalc is a C# calculator for Windows and Android with a shared calculation engine. The Windows app uses WPF and includes scientific, graphing, programmer, and Python modes.
+NexCalc is a C# calculator for Windows and Android with a shared calculation engine. Both apps include Standard, Scientific, Programmer, Graph, Statistics, Carpenter, Unit Converter, and Python modes.
 
-## Build and run
+## Windows (WPF)
 
 On Windows with the .NET 10 SDK installed, run:
 
@@ -11,7 +11,19 @@ dotnet build NexCalc.slnx
 dotnet run --project src/NexCalc
 ```
 
-## Run the tests
+The **Menu** switches modes. In Scientific mode, **Shift** reveals alternate
+functions for the next alternate keypress. **Norm** displays the exact fraction
+alongside a rounded decimal when applicable. Use **Number pad** in Graph mode to
+enter expressions or adjust plot settings.
+
+Carpenter supports Imperial and Metric length, area, volume, board feet, diagonals,
+and material quantity. The Unit Converter covers length, mass, volume, area,
+temperature, and speed. Both modes accept fractions and expressions.
+
+Windows Python mode uses the locally installed Python interpreter on PATH and
+provides a resizable output pane. Android bundles its own Python runtime.
+
+## Run the shared tests
 
 ```powershell
 dotnet run --project src/NexCalc.Tests

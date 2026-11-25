@@ -61,11 +61,9 @@ public sealed partial class MainActivity
             }
 
             result.Text = Format.Display(value, displayFormat, digits);
-            bool showExact = displayFormat == DisplayFormat.Norm && value.exact &&
-                value.r is { } fraction && !fraction.CleanDecimal();
-            exactResult.Visibility = showExact ? ViewStates.Visible : ViewStates.Gone;
-            if (showExact)
-                exactResult.Text = "Exact: " + Format.Display(value, DisplayFormat.Frac, digits);
+            string? exact = Format.ExactCompanion(value, displayFormat);
+            exactResult.Visibility = exact is not null ? ViewStates.Visible : ViewStates.Gone;
+            if (exact is not null) exactResult.Text = "Exact: " + exact;
         }
 
         void Evaluate()
@@ -107,15 +105,6 @@ public sealed partial class MainActivity
         input.TextChanged += (_, _) => UpdatePrint();
         OnDone(input, Evaluate);
 
-        var alternateKeys = new Dictionary<string, string>
-        {
-            ["sin"] = "sinh", ["cos"] = "cosh", ["tan"] = "tanh",
-            ["log"] = "logb", ["exp"] = "EXP", ["^"] = "sqrt",
-            ["x²"] = "x³", ["d/c"] = "dms", ["pol"] = "rec", ["X"] = "Y",
-            ["conj"] = "arg", ["i"] = "cmplx", ["π"] = "e", ["A"] = "B",
-            ["MR"] = "MC", ["STO"] = "RCL", ["∫"] = "d/dx", ["nCr"] = "nPr",
-            ["poly2"] = "poly3", ["poly4"] = "solve"
-        };
         string[][] scientificKeys =
         [
             ["sin", "cos", "tan", "ln", "log", "^"],
@@ -160,13 +149,13 @@ public sealed partial class MainActivity
                 "(" or ")" or "," => 0x34424F,
                 _ => 0x263F53
             });
-            if (alternateKeys.TryGetValue(key, out var alternate))
+            if (ScientificKeys.Alternates.TryGetValue(key, out var alternate))
                 shiftedButtons.Add((button, key, alternate));
         }
 
         void PressKey(string key)
         {
-            if (shifted && alternateKeys.TryGetValue(key, out var alternate))
+            if (shifted && ScientificKeys.Alternates.TryGetValue(key, out var alternate))
             {
                 SetShift(false);
                 Press(alternate);
@@ -194,32 +183,7 @@ public sealed partial class MainActivity
                 case "DEL": Insert(input, "", delete: true); return;
             }
 
-            Insert(input, key switch
-            {
-                "sin" or "cos" or "tan" or "ln" or "log" or "exp" or "sqrt" or "dms" or "logb" or
-                "pol" or "rec" or "conj" or "arg" or "cmplx" or "sinh" or "cosh" or "tanh" or
-                "poly2" or "poly3" or "poly4" or "solve" => key + "(",
-                "X" or "Y" => key + "()",
-                "M+" => "madd(ANS)",
-                "MR" => "m(",
-                "MC" => "mc(",
-                "STO" => "sto(",
-                "RCL" => "rcl(",
-                "A" or "B" or "D" => key.ToLowerInvariant(),
-                "d/c" => string.IsNullOrEmpty(input.Text) ? "1/2" : "/",
-                "SPC" => " ",
-                "x²" => "square(",
-                "x³" => "cube(",
-                "1/x" => "recip(",
-                "EXP" => "tenpow(",
-                "(-)" => "-",
-                "Rand#" => "rand()",
-                "∫" => "integrate(",
-                "d/dx" => "deriv(",
-                "nCr" => "combin(",
-                "nPr" => "perm(",
-                _ => key
-            });
+            Insert(input, ScientificKeys.Insertion(key, string.IsNullOrEmpty(input.Text)));
         }
 
         StyleKey(shiftButton, 0x135764);

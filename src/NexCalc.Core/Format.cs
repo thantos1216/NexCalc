@@ -12,6 +12,10 @@ namespace NexCalc.Core
         // FIX/SCI presentation over the computed value. NORM delegates to the
         // exact-first Display(v); FIX rounds away from zero to n decimals,
         // SCI renders mantissa "d.ddd" plus signed exponent, as Windows Calc.
+        public static string? ExactCompanion(Val value, DisplayFormat format) =>
+            format == DisplayFormat.Norm && value.exact && value.r is { } fraction && !fraction.CleanDecimal()
+                ? Display(value, DisplayFormat.Frac, 0) : null;
+
         public static string Display(Val v, DisplayFormat fmt, int digits) {
             if (v.text != null) return v.text;
             if (v.roots != null) return Display(v);

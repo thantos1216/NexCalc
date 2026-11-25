@@ -1093,6 +1093,26 @@ public class Program {
         MP("mp empty", "", "");
         MP("mp div zero raw", "1/0", "1\n─\n0");
 
+        // Shared Windows and Android calculator controls.
+        Check("exact companion in Norm", "1/3",
+            Format.ExactCompanion(Expression.Calculate("1/3", AngleMode.Deg).value!, DisplayFormat.Norm) ?? "");
+        Check("terminating decimal needs no companion", "",
+            Format.ExactCompanion(Expression.Calculate("1/8", AngleMode.Deg).value!, DisplayFormat.Norm) ?? "");
+        Check("explicit fraction format needs no companion", "",
+            Format.ExactCompanion(Expression.Calculate("1/3", AngleMode.Deg).value!, DisplayFormat.Frac) ?? "");
+        Check("shifted trig insertion", "sinh(", ScientificKeys.Insertion(ScientificKeys.Alternates["sin"], true));
+        Check("mixed measurement parsing", "True", (Measurements.TryParse("2 3/4", out double mixed) && mixed == 2.75).ToString());
+        Check("complex measurement rejected", "False", Measurements.TryParse("1+i", out _).ToString());
+        Check("imperial length rounded to sixteenths", "2 ft 3 1/2 in (nearest 1/16 in)",
+            Measurements.Carpenter(CarpenterTool.Length, false, 0, 2, 3.5, 0).Split('\n')[0]);
+        Check("material estimate includes waste and rounds up", "6 items",
+            Measurements.Carpenter(CarpenterTool.MaterialQuantity, true, 0, 10, 2, 10));
+        Check("zero coverage is invalid", "Coverage per item must be greater than zero.",
+            Measurements.Carpenter(CarpenterTool.MaterialQuantity, false, 0, 10, 0, 10));
+        var temperature = UnitConversion.Categories[4].Units;
+        Check("Fahrenheit to Celsius", "True", (Math.Abs(UnitConversion.Convert(212, temperature[0], temperature[1]) - 100) < 1e-12).ToString());
+        Check("Celsius to Kelvin", "True", (Math.Abs(UnitConversion.Convert(0, temperature[1], temperature[2]) - 273.15) < 1e-12).ToString());
+
         // ---- summary ----
         Console.WriteLine("RESULTS: " + passed + " passed, " + failed + " failed");
         return failed == 0 ? 0 : 1;
