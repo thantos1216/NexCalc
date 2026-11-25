@@ -60,6 +60,7 @@ public sealed partial class MainActivity : Activity
     protected override void OnCreate(Bundle? savedInstanceState)
     {
         base.OnCreate(savedInstanceState);
+        Window?.SetSoftInputMode(SoftInput.AdjustResize);
 
         var preferences = GetPreferences(global::Android.Content.FileCreationMode.Private)!;
         lightTheme = preferences.GetBoolean("lightTheme", false);
@@ -108,15 +109,25 @@ public sealed partial class MainActivity : Activity
         panels = [ScientificPanel(), ProgrammerPanel(), GraphPanel(), PythonPanel(), StatisticsPanel(), StandardPanel(), CarpenterPanel(), ConverterPanel()];
         foreach (var (panel, index) in panels.Select((panel, index) => (panel, index)))
         {
-            var scroll = new ScrollView(this) { FillViewport = true };
-            scroll.AddView(panel);
-            scroll.Visibility = index == 0 ? ViewStates.Visible : ViewStates.Gone;
-            panels[index] = scroll;
-            frame.AddView(scroll, new FrameLayout.LayoutParams(-1, -1));
+            View page = panel;
+            if (modeNames[index] != "Python")
+            {
+                var scroll = new ScrollView(this) { FillViewport = true };
+                scroll.AddView(panel);
+                page = scroll;
+            }
+            page.Visibility = index == 0 ? ViewStates.Visible : ViewStates.Gone;
+            panels[index] = page;
+            frame.AddView(page, new FrameLayout.LayoutParams(-1, -1));
         }
 
         SetContentView(root);
         root.RequestFocus();
+        if (OperatingSystem.IsAndroidVersionAtLeast(30) && Window?.InsetsController is { } insets)
+        {
+            insets.SystemBarsBehavior = (int)WindowInsetsControllerBehavior.ShowTransientBarsBySwipe;
+            insets.Hide(WindowInsets.Type.SystemBars());
+        }
     }
 
     private LinearLayout Column() => new(this) { Orientation = Orientation.Vertical };

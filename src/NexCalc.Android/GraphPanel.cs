@@ -139,7 +139,14 @@ public sealed partial class MainActivity
             chart.SetCurves([], [], null, null, null, null, 1, 1);
             message.Text = "";
         }), Key("Plot", Plot));
-        panel.AddView(chart, new LinearLayout.LayoutParams(-1, Dp(280)));
+        var pad = NumberPad(() => first, Plot, [first, second, min, max, bottom, top, samples, xStep, yStep], expression: true);
+        pad.Visibility = ViewStates.Gone;
+        panel.AddView(Key("Number pad", () => pad.Visibility = pad.Visibility == ViewStates.Visible ? ViewStates.Gone : ViewStates.Visible));
+        panel.AddView(pad);
+        foreach (var field in new[] { first, second, min, max, bottom, top, samples, xStep, yStep })
+            field.Click += (_, _) => pad.Visibility = ViewStates.Visible;
+        chart.SetMinimumHeight(Dp(215));
+        panel.AddView(chart, new LinearLayout.LayoutParams(-1, -2, 1));
         panel.AddView(message);
         Row(panel, Key("Zoom In", () => Zoom(0.5)), Key("Zoom Out", () => Zoom(2)), Key("Trace", () => Trace(1)),
             Key("◀", () => Trace(-1)), Key("▶", () => Trace(1)));

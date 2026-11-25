@@ -13,7 +13,8 @@ public sealed partial class MainActivity
     {
         var panel = Column();
         var source = Field("Python script", "print('Hello from NexCalc')", multiline: true);
-        source.SetMinHeight(Dp(160));
+        source.SetMinHeight(0);
+        source.SetMinimumHeight(0);
         source.Gravity = GravityFlags.Top | GravityFlags.Start;
         var output = Label("");
         output.SetTextIsSelectable(true);
@@ -75,9 +76,11 @@ public sealed partial class MainActivity
             panel.AddView(pythonEngine, new LinearLayout.LayoutParams(1, 1));
             pythonEngine.LoadUrl(PythonAssets.Entry);
         });
-        panel.AddView(source);
+        var outputScroll = new ScrollView(this) { FillViewport = true };
+        outputScroll.AddView(output);
+        panel.AddView(source, new LinearLayout.LayoutParams(-1, 0, 1));
         panel.AddView(run);
-        panel.AddView(output);
+        panel.AddView(outputScroll, new LinearLayout.LayoutParams(-1, 0, 1));
         return panel;
     }
 

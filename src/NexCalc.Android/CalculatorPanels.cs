@@ -294,7 +294,8 @@ public sealed partial class MainActivity
         panel.AddView(message);
         ShowResults(["0", "0", "0", "0"]);
         OnDone(input, Evaluate);
-        KeyRows(panel,
+        var keypad = Column();
+        KeyRows(keypad,
         [
             ["A", "B", "C", "D", "E", "F"],
             ["and", "or", "xor", "shl", "shr", "~"],
@@ -307,7 +308,8 @@ public sealed partial class MainActivity
             if (key == "=") Evaluate();
             else if (key == "DEL") Insert(input, "", delete: true);
             else Insert(input, key is "and" or "or" or "xor" or "shl" or "shr" or "mod" ? " " + key + " " : key);
-        });
+        }, stretch: true);
+        panel.AddView(keypad, new LinearLayout.LayoutParams(-1, -2, 1));
         return panel;
     }
 
@@ -343,7 +345,10 @@ public sealed partial class MainActivity
             "rmeanx(", "rmeany(", "yhat(", "xhat("
         ];
         var shortcuts = labels.SelectMany(row => row).Zip(functions).ToDictionary(pair => pair.First, pair => pair.Second);
-        KeyRows(panel, labels, key => Insert(input, shortcuts[key]));
+        var statKeys = Column();
+        KeyRows(statKeys, labels, key => Insert(input, shortcuts[key]), stretch: true);
+        panel.AddView(statKeys, new LinearLayout.LayoutParams(-1, -2, 1));
+        panel.AddView(NumberPad(() => input, Evaluate, [input], expression: true), new LinearLayout.LayoutParams(-1, -2, 1));
         return panel;
     }
 }

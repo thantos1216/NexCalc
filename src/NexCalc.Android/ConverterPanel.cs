@@ -88,6 +88,7 @@ public sealed partial class MainActivity
         panel.AddView(Key("Swap units", () => { (from, to) = (to, from); RefreshUnits(); }));
         panel.AddView(input);
         panel.AddView(output);
+        panel.AddView(NumberPad(() => input, ConvertValue, [input]), new LinearLayout.LayoutParams(-1, -2, 1));
         input.TextChanged += (_, _) => ConvertValue();
         RefreshUnits();
         return panel;
