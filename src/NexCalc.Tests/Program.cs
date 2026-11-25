@@ -442,6 +442,8 @@ public class Program {
         FmtCheck("frac disp neg", "-3/2", "FRAC", 0, "-1 1/2");
         FmtCheck("frac disp 17/10", "17/10", "FRAC", 0, "1 7/10");
         FmtCheck("frac disp 17/10 via frac()", "frac(17,10)", "FRAC", 0, "1 7/10");
+        Calc("fraction addition decimal in Norm", "7/9+1/9", deg, "0.8888888888888889");
+        FmtCheck("fraction addition exact in Frac", "7/9+1/9", "FRAC", 0, "8/9");
         FmtCheck("frac disp irrational", "sqrt(2)", "FRAC", 0, "1.414213562373095");
         FmtCheck("mixed 6/4", "6/4", "MIXED", 0, "1 1/2");
         FmtCheck("mixed 10/3", "10/3", "MIXED", 0, "3 1/3");

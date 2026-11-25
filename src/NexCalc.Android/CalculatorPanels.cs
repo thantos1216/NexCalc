@@ -13,6 +13,11 @@ public sealed partial class MainActivity
         var result = Label("0", 30);
         result.SetTextIsSelectable(true);
         result.AccessibilityLiveRegion = AccessibilityLiveRegion.Polite;
+        var exactResult = Label("", 17);
+        exactResult.SetTextColor(Accent);
+        exactResult.SetTextIsSelectable(true);
+        exactResult.Visibility = ViewStates.Gone;
+        Val? visibleValue = null;
         var print = Label("", 14);
         print.Typeface = global::Android.Graphics.Typeface.Monospace;
         var history = new List<(string Expression, string Display)>();
@@ -43,6 +48,22 @@ public sealed partial class MainActivity
             if (mathPrint) print.Text = Format.MathPrint(input.Text ?? "");
         }
 
+        void RenderResult()
+        {
+            if (visibleValue is not { } value)
+            {
+                exactResult.Visibility = ViewStates.Gone;
+                return;
+            }
+
+            result.Text = Format.Display(value, displayFormat, digits);
+            bool showExact = displayFormat == DisplayFormat.Norm && value.exact &&
+                value.r is { } fraction && !fraction.CleanDecimal();
+            exactResult.Visibility = showExact ? ViewStates.Visible : ViewStates.Gone;
+            if (showExact)
+                exactResult.Text = "Exact: " + Format.Display(value, DisplayFormat.Frac, digits);
+        }
+
         void Evaluate()
         {
             var text = input.Text ?? "";
@@ -51,26 +72,30 @@ public sealed partial class MainActivity
             if (calculation.ok && calculation.value is { } value)
             {
                 answer = value;
-                result.Text = Format.Display(value, displayFormat, digits);
+                visibleValue = value;
+                RenderResult();
                 result.SetTextColor(Foreground);
-                history.Insert(0, (text, result.Text));
+                history.Insert(0, (text, result.Text ?? ""));
             }
             else
             {
+                visibleValue = null;
+                RenderResult();
                 result.Text = calculation.message ?? "Unable to calculate";
                 result.SetTextColor(ErrorColor);
             }
         }
 
         panel.AddView(result);
+        panel.AddView(exactResult);
         panel.AddView(input);
         panel.AddView(print);
         Row(panel,
             Choice("Angle", ["DEG", "RAD", "GRAD"], (int)angleMode, selected => { angleMode = (AngleMode)selected; SaveSettings(); }),
             Choice("Format", ["Norm", "Fix", "Sci", "DMS", "Frac", "Mixed"], (int)displayFormat,
-                selected => { displayFormat = (DisplayFormat)selected; SaveSettings(); }),
+                selected => { displayFormat = (DisplayFormat)selected; RenderResult(); SaveSettings(); }),
             Choice("Digits", Enumerable.Range(0, 11).Select(value => value.ToString()).ToArray(), digits,
-                selected => { digits = selected; SaveSettings(); }));
+                selected => { digits = selected; RenderResult(); SaveSettings(); }));
         var toggle = new CheckBox(this) { Text = "MathPrint", Checked = mathPrint };
         toggle.SetTextColor(Foreground);
         toggle.CheckedChange += (_, args) => { mathPrint = args.IsChecked; UpdatePrint(); SaveSettings(); };
@@ -132,7 +157,13 @@ public sealed partial class MainActivity
             switch (key)
             {
                 case "=": Evaluate(); return;
-                case "AC": input.Text = ""; result.Text = "0"; result.SetTextColor(Foreground); return;
+                case "AC":
+                    input.Text = "";
+                    visibleValue = null;
+                    RenderResult();
+                    result.Text = "0";
+                    result.SetTextColor(Foreground);
+                    return;
                 case "DEL": Insert(input, "", delete: true); return;
             }
 
