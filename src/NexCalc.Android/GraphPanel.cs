@@ -23,6 +23,7 @@ public sealed partial class MainActivity
         var yStep = Field("Y step", "1");
         var message = Label("");
         var chart = new GraphView(this);
+        ApplyThemeTo(chart.Invalidate);
         int plotType = 0;
 
         void Plot()
@@ -226,7 +227,7 @@ public sealed partial class MainActivity
         protected override void OnDraw(Canvas canvas)
         {
             base.OnDraw(canvas);
-            canvas.DrawColor(Color.Rgb(18, 18, 30));
+            canvas.DrawColor(activity.lightTheme ? Color.Rgb(255, 255, 255) : Color.Rgb(18, 18, 30));
             if (xs.Length == 0) return;
             float pad = activity.Dp(14);
             float X(double x) => (float)(pad + (x - left) / (right - left) * (Width - pad * 2));
@@ -249,7 +250,7 @@ public sealed partial class MainActivity
 
             canvas.Save();
             canvas.ClipRect(pad, pad, Width - pad, Height - pad);
-            paint.Color = Color.Rgb(52, 52, 73);
+            paint.Color = activity.lightTheme ? Color.Rgb(215, 221, 230) : Color.Rgb(52, 52, 73);
             paint.StrokeWidth = activity.Dp(1);
             if ((right - left) / xStep <= 100)
                 for (int i = 0; i < 101; i++)
@@ -268,11 +269,11 @@ public sealed partial class MainActivity
             paint.Color = Color.Rgb(126, 134, 157);
             Line(0, bottom, 0, top);
             Line(left, 0, right, 0);
-            Curve(xs, ys, Accent);
-            if (other is { } second) Curve(second.xs, second.ys, Color.Rgb(143, 216, 160));
+            Curve(xs, ys, activity.Accent);
+            if (other is { } second) Curve(second.xs, second.ys, activity.lightTheme ? Color.Rgb(35, 104, 68) : Color.Rgb(143, 216, 160));
             if (sketch is { } guide)
             {
-                paint.Color = ErrorColor;
+                paint.Color = activity.ErrorColor;
                 if (guide.Type == "Horiz") Line(left, guide.Y, right, guide.Y);
                 else if (guide.Type == "Vert") Line(guide.X, bottom, guide.X, top);
                 else Line(left, guide.Y + guide.Slope * (left - guide.X), right, guide.Y + guide.Slope * (right - guide.X));

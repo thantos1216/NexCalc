@@ -1,6 +1,7 @@
 using Android.App;
 using ColorStateList = Android.Content.Res.ColorStateList;
 using Android.Graphics;
+using Android.Graphics.Drawables;
 using Android.OS;
 using Android.Text;
 using Android.Views;
@@ -15,11 +16,37 @@ namespace NexCalc.Mobile;
         global::Android.Content.PM.ConfigChanges.ScreenSize | global::Android.Content.PM.ConfigChanges.KeyboardHidden)]
 public sealed partial class MainActivity : Activity
 {
-    private static readonly Color Background = Color.Rgb(22, 22, 34);
-    private static readonly Color Surface = Color.Rgb(42, 42, 62);
-    private static readonly Color Foreground = Color.Rgb(238, 240, 248);
-    private static readonly Color Accent = Color.Rgb(143, 216, 255);
-    private static readonly Color ErrorColor = Color.Rgb(255, 158, 158);
+    private bool lightTheme;
+    private readonly List<Action> themeUpdates = [];
+    private Color Background => lightTheme ? Color.Rgb(244, 246, 250) : Color.Rgb(22, 22, 34);
+    private Color Foreground => lightTheme ? Color.Rgb(28, 38, 55) : Color.Rgb(238, 240, 248);
+    private Color Accent => lightTheme ? Color.Rgb(0, 80, 111) : Color.Rgb(143, 216, 255);
+    private Color ErrorColor => lightTheme ? Color.Rgb(129, 33, 45) : Color.Rgb(255, 158, 158);
+
+    private void ApplyThemeTo(Action update)
+    {
+        themeUpdates.Add(update);
+        update();
+    }
+
+    private AlertDialog.Builder Dialog() => new(this, lightTheme
+        ? global::Android.Resource.Style.ThemeMaterialLightDialogAlert
+        : global::Android.Resource.Style.ThemeMaterialDialogAlert);
+
+    private void ChooseTheme()
+    {
+        var dialog = Dialog();
+        dialog.SetTitle("Theme");
+        dialog.SetSingleChoiceItems(["Light", "Dark"], lightTheme ? 0 : 1, (sender, args) =>
+        {
+            lightTheme = args.Which == 0;
+            using var editor = GetPreferences(global::Android.Content.FileCreationMode.Private)?.Edit();
+            editor?.PutBoolean("lightTheme", lightTheme)?.Apply();
+            foreach (var update in themeUpdates) update();
+            (sender as global::Android.Content.IDialogInterface)?.Dismiss();
+        });
+        dialog.Show();
+    }
 
     private readonly string[] modeNames = ["Scientific", "Programmer", "Graph", "Python", "Stat"];
     private View[] panels = [];
@@ -35,13 +62,14 @@ public sealed partial class MainActivity : Activity
         base.OnCreate(savedInstanceState);
 
         var preferences = GetPreferences(global::Android.Content.FileCreationMode.Private)!;
+        lightTheme = preferences.GetBoolean("lightTheme", false);
         angleMode = (AngleMode)preferences.GetInt("angle", 0);
         displayFormat = (DisplayFormat)preferences.GetInt("format", 0);
         digits = preferences.GetInt("digits", 0);
         mathPrint = preferences.GetBoolean("mathPrint", false);
 
         var root = Column();
-        root.SetBackgroundColor(Background);
+        ApplyThemeTo(() => root.SetBackgroundColor(Background));
         root.FocusableInTouchMode = true;
         var insetPadding = new InsetPadding(Dp(12));
         root.SetOnApplyWindowInsetsListener(insetPadding);
@@ -50,18 +78,24 @@ public sealed partial class MainActivity : Activity
         var header = new LinearLayout(this);
         header.SetGravity(GravityFlags.CenterVertical);
         var title = Label(modeNames[0], 20);
-        title.SetTextColor(Accent);
+        ApplyThemeTo(() => title.SetTextColor(Accent));
         header.AddView(Key("☰ Menu", () =>
         {
-            var menu = new AlertDialog.Builder(this);
+            var menu = Dialog();
             menu.SetTitle("NexCalc");
-            menu.SetSingleChoiceItems(modeNames, activeMode, (dialog, selection) =>
+            menu.SetSingleChoiceItems([.. modeNames, "Theme…"], activeMode, (dialog, selection) =>
                 {
+                    (dialog as global::Android.Content.IDialogInterface)?.Dismiss();
+                    if (selection.Which == modeNames.Length)
+                    {
+                        ChooseTheme();
+                        return;
+                    }
+
                     panels[activeMode].Visibility = ViewStates.Gone;
                     activeMode = selection.Which;
                     panels[activeMode].Visibility = ViewStates.Visible;
                     title.Text = modeNames[activeMode];
-                    (dialog as global::Android.Content.IDialogInterface)?.Dismiss();
                 });
             menu.Show();
         }));
@@ -90,7 +124,7 @@ public sealed partial class MainActivity : Activity
     private TextView Label(string text, int size = 16)
     {
         var label = new TextView(this) { Text = text, TextSize = size };
-        label.SetTextColor(Foreground);
+        ApplyThemeTo(() => label.SetTextColor(Foreground));
         label.SetPadding(Dp(4), Dp(4), Dp(4), Dp(4));
         return label;
     }
@@ -107,9 +141,12 @@ public sealed partial class MainActivity : Activity
             InputType = InputTypes.ClassText | InputTypes.TextFlagNoSuggestions |
                 (multiline ? InputTypes.TextFlagMultiLine : 0)
         };
-        field.SetTextColor(Foreground);
-        field.SetHintTextColor(Color.Rgb(159, 180, 200));
-        field.SetBackgroundColor(Color.Rgb(34, 34, 52));
+        ApplyThemeTo(() =>
+        {
+            field.SetTextColor(Foreground);
+            field.SetHintTextColor(lightTheme ? Color.Rgb(74, 88, 105) : Color.Rgb(159, 180, 200));
+            field.SetBackgroundColor(lightTheme ? Color.Rgb(232, 238, 245) : Color.Rgb(34, 34, 52));
+        });
         field.SetPadding(Dp(8), Dp(6), Dp(8), Dp(6));
         field.SetMinHeight(Dp(44));
         if (!multiline)
@@ -137,8 +174,8 @@ public sealed partial class MainActivity : Activity
     {
         var button = new Button(this) { Text = text, TextSize = 13 };
         button.SetAllCaps(false);
-        button.SetTextColor(text is "AC" or "DEL" ? ErrorColor : Foreground);
-        button.BackgroundTintList = ColorStateList.ValueOf(text == "=" ? Color.Rgb(58, 58, 106) : Surface);
+        StyleKey(button, text == "=" ? 0x3A3A6A : 0x2A2A3E);
+        ApplyThemeTo(() => button.SetTextColor(text is "AC" or "DEL" ? ErrorColor : Foreground));
         button.SetPadding(Dp(2), 0, Dp(2), 0);
         button.SetMinWidth(0);
         button.SetMinimumWidth(0);
@@ -165,9 +202,29 @@ public sealed partial class MainActivity : Activity
         }
     }
 
-    private static void StyleKey(Button button, int rgb) =>
-        button.BackgroundTintList = ColorStateList.ValueOf(
-            Color.Rgb((rgb >> 16) & 255, (rgb >> 8) & 255, rgb & 255));
+    private void StyleKey(Button button, int rgb)
+    {
+        if (button.Tag is GradientDrawable existing)
+        {
+            existing.SetColor(KeyColor(rgb));
+            ApplyThemeTo(() => existing.SetColor(KeyColor(rgb)));
+            return;
+        }
+
+        var shape = new GradientDrawable();
+        shape.SetCornerRadius(Dp(7));
+        button.Tag = shape;
+        button.Background = new InsetDrawable(
+            new RippleDrawable(ColorStateList.ValueOf(Color.Argb(55, 128, 145, 165)), shape, null),
+            Dp(4), Dp(5), Dp(4), Dp(5));
+        ApplyThemeTo(() => shape.SetColor(KeyColor(rgb)));
+    }
+
+    private Color KeyColor(int rgb)
+    {
+        int r = (rgb >> 16) & 255, g = (rgb >> 8) & 255, b = rgb & 255;
+        return lightTheme ? Color.Rgb(175 + r / 2, 175 + g / 2, 175 + b / 2) : Color.Rgb(r, g, b);
+    }
 
     private Button Choice(string label, string[] values, int initial, Action<int> changed)
     {
@@ -175,7 +232,7 @@ public sealed partial class MainActivity : Activity
         Button button = null!;
         button = Key(values[initial], () =>
         {
-            var choices = new AlertDialog.Builder(this);
+            var choices = Dialog();
             choices.SetTitle(label);
             choices.SetSingleChoiceItems(values, selected, (dialog, args) =>
                 {

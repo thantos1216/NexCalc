@@ -16,7 +16,9 @@ public sealed partial class MainActivity
         result.SetTextIsSelectable(true);
         result.AccessibilityLiveRegion = AccessibilityLiveRegion.Polite;
         var exactResult = Label("", 17);
-        exactResult.SetTextColor(Accent);
+        ApplyThemeTo(() => exactResult.SetTextColor(Accent));
+        bool resultHasError = false;
+        ApplyThemeTo(() => result.SetTextColor(resultHasError ? ErrorColor : Foreground));
         exactResult.SetTextIsSelectable(true);
         exactResult.Visibility = ViewStates.Gone;
         Val? visibleValue = null;
@@ -27,14 +29,14 @@ public sealed partial class MainActivity
         {
             if (history.Count == 0)
             {
-                var emptyDialog = new global::Android.App.AlertDialog.Builder(this);
+                var emptyDialog = Dialog();
                 emptyDialog.SetMessage("No calculations yet.");
                 emptyDialog.SetPositiveButton("OK", (_, _) => { });
                 emptyDialog.Show();
                 return;
             }
 
-            var historyDialog = new global::Android.App.AlertDialog.Builder(this);
+            var historyDialog = Dialog();
             historyDialog.SetTitle("History");
             historyDialog.SetItems(history.Select(entry => entry.Expression + " = " + entry.Display).ToArray(), (_, args) =>
                 {
@@ -76,6 +78,7 @@ public sealed partial class MainActivity
                 answer = value;
                 visibleValue = value;
                 RenderResult();
+                resultHasError = false;
                 result.SetTextColor(Foreground);
                 history.Insert(0, (text, result.Text ?? ""));
             }
@@ -84,12 +87,15 @@ public sealed partial class MainActivity
                 visibleValue = null;
                 RenderResult();
                 result.Text = calculation.message ?? "Unable to calculate";
+                resultHasError = true;
                 result.SetTextColor(ErrorColor);
             }
         }
 
         var display = Column();
-        display.SetBackgroundColor(global::Android.Graphics.Color.Rgb(28, 44, 48));
+        ApplyThemeTo(() => display.SetBackgroundColor(lightTheme
+            ? global::Android.Graphics.Color.Rgb(220, 236, 234)
+            : global::Android.Graphics.Color.Rgb(28, 44, 48)));
         display.SetPadding(Dp(8), 0, Dp(8), 0);
         display.AddView(result);
         display.AddView(exactResult);
@@ -103,7 +109,7 @@ public sealed partial class MainActivity
             Choice("Digits", Enumerable.Range(0, 11).Select(value => value.ToString()).ToArray(), digits,
                 selected => { digits = selected; RenderResult(); SaveSettings(); }));
         var toggle = new CheckBox(this) { Text = "MathPrint", Checked = mathPrint };
-        toggle.SetTextColor(Foreground);
+        ApplyThemeTo(() => toggle.SetTextColor(Foreground));
         toggle.CheckedChange += (_, args) => { mathPrint = args.IsChecked; UpdatePrint(); SaveSettings(); };
         var keyPanel = Column();
         UpdatePrint();
@@ -191,6 +197,7 @@ public sealed partial class MainActivity
                     visibleValue = null;
                     RenderResult();
                     result.Text = "0";
+                    resultHasError = false;
                     result.SetTextColor(Foreground);
                     return;
                 case "DEL": Insert(input, "", delete: true); return;
@@ -238,7 +245,7 @@ public sealed partial class MainActivity
             });
             button.TextSize = 17;
         }, stretch: true);
-        SetShift(false);
+        ApplyThemeTo(() => SetShift(shifted));
         panel.AddView(keyPanel, new LinearLayout.LayoutParams(-1, -2, 1));
         return panel;
     }
@@ -250,7 +257,7 @@ public sealed partial class MainActivity
         var output = Label("");
         output.SetTextIsSelectable(true);
         var message = Label("");
-        message.SetTextColor(ErrorColor);
+        ApplyThemeTo(() => message.SetTextColor(ErrorColor));
         string[] formats = ["DEC", "HEX", "OCT", "BIN"];
         int[] bases = [10, 16, 8, 2];
         int[] widths = [8, 16, 32, 64];
@@ -319,7 +326,7 @@ public sealed partial class MainActivity
         var input = Field("Statistics expression");
         var output = Label("0", 28);
         var message = Label("");
-        message.SetTextColor(ErrorColor);
+        ApplyThemeTo(() => message.SetTextColor(ErrorColor));
         void Evaluate()
         {
             var calculation = Expression.Calculate(input.Text ?? "", angleMode);
