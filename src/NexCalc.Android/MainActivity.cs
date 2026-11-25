@@ -48,7 +48,7 @@ public sealed partial class MainActivity : Activity
         dialog.Show();
     }
 
-    private readonly string[] modeNames = ["Scientific", "Programmer", "Graph", "Python", "Stat"];
+    private readonly string[] modeNames = ["Scientific", "Programmer", "Graph", "Python", "Stat", "Standard", "Carpenter", "Unit Converter"];
     private View[] panels = [];
     private int activeMode;
     private Val? answer;
@@ -105,7 +105,7 @@ public sealed partial class MainActivity : Activity
 
         var frame = new FrameLayout(this);
         root.AddView(frame, new LinearLayout.LayoutParams(-1, 0, 1));
-        panels = [ScientificPanel(), ProgrammerPanel(), GraphPanel(), PythonPanel(), StatisticsPanel()];
+        panels = [ScientificPanel(), ProgrammerPanel(), GraphPanel(), PythonPanel(), StatisticsPanel(), StandardPanel(), CarpenterPanel(), ConverterPanel()];
         foreach (var (panel, index) in panels.Select((panel, index) => (panel, index)))
         {
             var scroll = new ScrollView(this) { FillViewport = true };

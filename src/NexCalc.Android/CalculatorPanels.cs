@@ -9,9 +9,9 @@ public sealed partial class MainActivity
     private View ScientificPanel()
     {
         var panel = Column();
-        var input = Field("Expression");
+        var input = DisplayInput("Expression");
         var result = Label("0", 38);
-        result.SetMinHeight(Dp(60));
+        result.SetMinHeight(Dp(72));
         result.Gravity = GravityFlags.End | GravityFlags.CenterVertical;
         result.SetTextIsSelectable(true);
         result.AccessibilityLiveRegion = AccessibilityLiveRegion.Polite;
@@ -92,16 +92,7 @@ public sealed partial class MainActivity
             }
         }
 
-        var display = Column();
-        ApplyThemeTo(() => display.SetBackgroundColor(lightTheme
-            ? global::Android.Graphics.Color.Rgb(220, 236, 234)
-            : global::Android.Graphics.Color.Rgb(28, 44, 48)));
-        display.SetPadding(Dp(8), 0, Dp(8), 0);
-        display.AddView(result);
-        display.AddView(exactResult);
-        display.AddView(input);
-        panel.AddView(display);
-        panel.AddView(print);
+        panel.AddView(CalculatorDisplay(input, result, exactResult, print));
         Row(panel,
             Choice("Angle", ["DEG", "RAD", "GRAD"], (int)angleMode, selected => { angleMode = (AngleMode)selected; SaveSettings(); }),
             Choice("Format", ["Norm", "Fix", "Sci", "DMS", "Frac", "Mixed"], (int)displayFormat,
