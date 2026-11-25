@@ -10,6 +10,7 @@ on:
       - 'src/NexCalc.Android/**'
       - 'src/NexCalc.Core/**'
       - 'src/NexCalc.Tests/**'
+      - 'tools/prepare-android-python.sh'
 
 permissions:
   contents: read
@@ -33,6 +34,8 @@ jobs:
         run: dotnet workload install android
       - name: Install Android SDK dependencies
         run: sdkmanager 'platforms;android-36.1' 'build-tools;36.0.0'
+      - name: Bundle offline Python
+        run: tools/prepare-android-python.sh
       - name: Build debug APK
         run: dotnet build src/NexCalc.Android -c Debug
       - uses: actions/upload-artifact@v6
