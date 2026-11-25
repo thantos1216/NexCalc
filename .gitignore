@@ -1,0 +1,15 @@
+.vs/
+bin/
+obj/
+*_user.tmp
+*.user
+*.suo
+__pycache__/
+/release/
+/installer/*.exe
+/_checkpoint/
+/.strata/
+/pdf_pages/
+/build_errors.txt
+/manual_build_errors.txt
+/repro.csx

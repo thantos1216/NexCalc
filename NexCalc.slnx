@@ -1,0 +1,7 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/NexCalc.Core/NexCalc.Core.csproj" />
+    <Project Path="src/NexCalc.Tests/NexCalc.Tests.csproj" />
+    <Project Path="src/NexCalc/NexCalc.csproj" />
+  </Folder>
+</Solution>
